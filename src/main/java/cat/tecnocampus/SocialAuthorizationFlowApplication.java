@@ -44,13 +44,14 @@ public class SocialAuthorizationFlowApplication extends SpringBootServletInitial
 		ResponseEntity<String> response;
 
 		if (!tokens.containsKey(name)) {
-			OAuth2RestTemplate gitHubTemplate = new OAuth2RestTemplate(gitHub(), oauth2ClientContext);
+			OAuth2RestTemplate gitHubTemplate = gitHubRestTemplate();//new OAuth2RestTemplate(gitHub(), oauth2ClientContext);
 			response = queryWithOauth2RestTemplate(gitHubTemplate);
-			System.out.println("Token: " + gitHubTemplate.getAccessToken().getValue());
+			System.out.println("New name token: " + gitHubTemplate.getAccessToken().getValue());
 			storeToken(name, gitHubTemplate);
 		}
 		else {
 			response = queryWithPlainRestTEmplate(name);
+			System.out.println("Known name token: " + tokens.get(name).getValue());
 		}
 
 		return response;
@@ -58,7 +59,8 @@ public class SocialAuthorizationFlowApplication extends SpringBootServletInitial
 
 	private ResponseEntity<String> queryWithOauth2RestTemplate(OAuth2RestTemplate gitHubTemplate) {
 		//Asks for user authorization only if it hasn't got the token (user authorized gitHub)
-		ResponseEntity<String> response = gitHubTemplate.exchange(url_GET_repositories, HttpMethod.GET, null, String.class);
+		ResponseEntity<String> response =
+				gitHubTemplate.exchange(url_GET_repositories, HttpMethod.GET, null, String.class);
 
 		return response;
 	}
@@ -90,6 +92,11 @@ public class SocialAuthorizationFlowApplication extends SpringBootServletInitial
 
 	public static void main(String[] args) {
 		SpringApplication.run(SocialAuthorizationFlowApplication.class, args);
+	}
+
+	@Bean
+	public OAuth2RestTemplate gitHubRestTemplate() {
+		return new OAuth2RestTemplate(gitHub(), oauth2ClientContext);
 	}
 
 	@Bean
