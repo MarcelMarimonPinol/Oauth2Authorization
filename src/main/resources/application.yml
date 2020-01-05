@@ -18,8 +18,6 @@ github:
     clientAuthenticationScheme: form
     scope: gist,repo
 #    auto-aprove-scopes: '.*'
-  resource:
-    userInfoUri: https://api.github.com/user
 
 logging:
   level:

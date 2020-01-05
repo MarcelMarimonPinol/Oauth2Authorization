@@ -2,13 +2,9 @@ package cat.tecnocampus;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.actuate.autoconfigure.ManagementWebSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.oauth2.resource.ResourceServerProperties;
-import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.web.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -27,67 +23,32 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 
-@SpringBootApplication(exclude = {SecurityAutoConfiguration.class, ManagementWebSecurityAutoConfiguration.class})
+@SpringBootApplication (exclude = {SecurityAutoConfiguration.class})
 @RestController
 @EnableOAuth2Client
-public class SocialAuthorizationFlowApplication extends SpringBootServletInitializer {
+public class SocialAuthorizationFlowApplication {
+
+	private OAuth2ClientContext oauth2ClientContext;
+	private OAuth2RestTemplate gitHubRestTemplate;
+
+	public SocialAuthorizationFlowApplication(OAuth2ClientContext oauth2ClientContext) {
+		this.oauth2ClientContext = oauth2ClientContext;
+	}
 
 	@Autowired
-	OAuth2ClientContext oauth2ClientContext;
+	public void setGitHubRestTemplate(OAuth2RestTemplate gitHubRestTemplate) {
+		this.gitHubRestTemplate = gitHubRestTemplate;
+	}
 
 	private String url_GET_repositories = "https://api.github.com/user/repos";
-	private HashMap<String,OAuth2AccessToken> tokens = new HashMap<>();
 
-	@GetMapping("/repositories/{name}")
-	public ResponseEntity<String> getRepositories(@PathVariable String name) { //note that "name" is only used to store tokens
+	@GetMapping("/repositories")
+	public ResponseEntity<String> getRepositories() {
 
 		ResponseEntity<String> response;
-
-		if (!tokens.containsKey(name)) {
-			OAuth2RestTemplate gitHubTemplate = gitHubRestTemplate();//new OAuth2RestTemplate(gitHub(), oauth2ClientContext);
-			response = queryWithOauth2RestTemplate(gitHubTemplate);
-			System.out.println("New name token: " + gitHubTemplate.getAccessToken().getValue());
-			storeToken(name, gitHubTemplate);
-		}
-		else {
-			response = queryWithPlainRestTEmplate(name);
-			System.out.println("Known name token: " + tokens.get(name).getValue());
-		}
+		response = gitHubRestTemplate.exchange(url_GET_repositories, HttpMethod.GET, null, String.class);
 
 		return response;
-	}
-
-	private ResponseEntity<String> queryWithOauth2RestTemplate(OAuth2RestTemplate gitHubTemplate) {
-		//Asks for user authorization only if it hasn't got the token (user authorized gitHub)
-		ResponseEntity<String> response =
-				gitHubTemplate.exchange(url_GET_repositories, HttpMethod.GET, null, String.class);
-
-		return response;
-	}
-
-	private void storeToken(String name, OAuth2RestTemplate gitHubTemplate) {
-		tokens.put(name,gitHubTemplate.getAccessToken());
-	}
-
-	private ResponseEntity<String> queryWithPlainRestTEmplate(String name) {
-		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-		headers.add("Authorization", String.format("%s %s", tokens.get(name).getTokenType(), tokens.get(name).getValue()));
-		headers.add("Accept", "application/vnd.github.v3+json");
-
-		RestTemplate restTemplate = new RestTemplate();
-
-		String body = "";
-		HttpEntity<String> request = new HttpEntity<String>(body, headers);
-
-		ResponseEntity<String> result = restTemplate.exchange(url_GET_repositories,
-				HttpMethod.GET, request, String.class);
-
-		return result;
-	}
-
-	@Override
-	protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
-		return application.sources(SocialAuthorizationFlowApplication.class);
 	}
 
 	public static void main(String[] args) {
@@ -100,17 +61,10 @@ public class SocialAuthorizationFlowApplication extends SpringBootServletInitial
 	}
 
 	@Bean
-	@ConfigurationProperties("gitHub.client")
+	@ConfigurationProperties("github.client")
 	public AuthorizationCodeResourceDetails gitHub() {
 		return new AuthorizationCodeResourceDetails();
 	}
-
-	@Bean
-	@ConfigurationProperties("gitHub.resource")
-	public ResourceServerProperties gitHubResource() {
-		return new ResourceServerProperties();
-	}
-
 }
 
 
