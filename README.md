@@ -7,5 +7,7 @@ This is an example using Oaut2RestTemplate for authorization (not for authentica
 * Note that security is disabled using: @SpringBootApplication(exclude = {SecurityAutoConfiguration.class)
 * Guess (or read in the documentation) what Oauth2ClientContext is (beyond a place to store the token)
 
-You may want to see the official documentation at https://docs.spring.io/spring-security-oauth2-boot/docs/current/reference/htmlsingle/#boot-features-security-custom-user-info-client
+You may want to see the official documentation at (in both cases see the client part)
+* https://docs.spring.io/spring-security-oauth2-boot/docs/current/reference/html5/
+* https://projects.spring.io/spring-security-oauth/docs/oauth2.html
  
